@@ -2,27 +2,53 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# Ruta básica para verificar que funciona
+# ----------- RUTA BASE ----------
 @app.route("/", methods=["GET"])
 def home():
     return "Servidor IoT activo ✅", 200
 
 
-# Endpoint que recibirá datos del ESP32
+# ----------- RECEPCION DE DATOS ----------
 @app.route("/datos", methods=["POST"])
 def recibir_datos():
     data = request.get_json()
 
-    print("\n📥 Dato recibido:")
-    print(data)
+    print("\n==============================")
+    print("📥 NUEVO PAQUETE RECIBIDO")
+    print("==============================")
 
-    respuesta = {
+    # ----------- DATOS GENERALES ----------
+    dia = data.get("dia")
+    hora = data.get("hora")
+
+    print(f"📅 Dia: {dia}")
+    print(f"⏰ Hora: {hora}")
+
+    print("\n🌍 Zonas:")
+
+    # ----------- RECORRER ZONAS ----------
+    zonas = data.get("zonas", [])
+
+    for zona in zonas:
+        nombre = zona.get("zona")
+        temp = zona.get("temperatura")
+        hum = zona.get("humedad")
+        pres = zona.get("presion")
+
+        print("\n-----------------------------")
+        print(f"Zona: {nombre}")
+        print(f"🌡️ Temp: {temp} °C")
+        print(f"💧 Humedad: {hum}%")
+        print(f"🧭 Presion: {pres} hPa")
+
+    print("\n✅ Datos procesados correctamente")
+
+    return jsonify({
         "status": "ok",
         "mensaje": "Datos recibidos correctamente"
-    }
-
-    return jsonify(respuesta), 200
+    }), 200
 
 
+# ----------- RUN LOCAL ----------
 if __name__ == "__main__":
     app.run(debug=True)
