@@ -48,7 +48,7 @@ def recibir_datos():
     print(data)
 
     # ----------- GUARDAR EN MONGO (SI ESTA DISPONIBLE) ----------
-    if collection:
+    if collection is not None:
         try:
             collection.insert_one(data)
             print("✅ Datos guardados en MongoDB")
