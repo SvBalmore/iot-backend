@@ -1,6 +1,15 @@
 from flask import Flask, request, jsonify
+from pymongo import MongoClient
 
 app = Flask(__name__)
+
+# ----------- CONEXION A MONGODB ----------
+MONGO_URI = "mongodb+srv://balmorechavez123_db_user:tognDnbWokhtQmHY@iot-proyecto.61kstlx.mongodb.net/?appName=iot-proyecto"
+
+client = MongoClient(MONGO_URI)
+
+db = client["iot_data"]  # base de datos
+collection = db["sensores"]  # colección
 
 # ----------- RUTA BASE ----------
 @app.route("/", methods=["GET"])
@@ -13,42 +22,28 @@ def home():
 def recibir_datos():
     data = request.get_json()
 
-    print("\n==============================")
-    print("📥 NUEVO PAQUETE RECIBIDO")
-    print("==============================")
+    print("\n📥 NUEVO PAQUETE RECIBIDO")
+    print(data)
 
-    # ----------- DATOS GENERALES ----------
-    dia = data.get("dia")
-    hora = data.get("hora")
+    try:
+        # 💾 GUARDAR EN MONGODB
+        collection.insert_one(data)
 
-    print(f"📅 Dia: {dia}")
-    print(f"⏰ Hora: {hora}")
+        print("✅ Datos guardados en MongoDB")
 
-    print("\n🌍 Zonas:")
+        return jsonify({
+            "status": "ok",
+            "mensaje": "Datos guardados correctamente"
+        }), 200
 
-    # ----------- RECORRER ZONAS ----------
-    zonas = data.get("zonas", [])
+    except Exception as e:
+        print("❌ Error al guardar:", str(e))
 
-    for zona in zonas:
-        nombre = zona.get("zona")
-        temp = zona.get("temperatura")
-        hum = zona.get("humedad")
-        pres = zona.get("presion")
-
-        print("\n-----------------------------")
-        print(f"Zona: {nombre}")
-        print(f"🌡️ Temp: {temp} °C")
-        print(f"💧 Humedad: {hum}%")
-        print(f"🧭 Presion: {pres} hPa")
-
-    print("\n✅ Datos procesados correctamente")
-
-    return jsonify({
-        "status": "ok",
-        "mensaje": "Datos recibidos correctamente"
-    }), 200
+        return jsonify({
+            "status": "error",
+            "mensaje": str(e)
+        }), 500
 
 
-# ----------- RUN LOCAL ----------
 if __name__ == "__main__":
     app.run(debug=True)
