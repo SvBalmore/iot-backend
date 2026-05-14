@@ -4,28 +4,32 @@ from pymongo import MongoClient
 app = Flask(__name__)
 
 # ----------- CONEXION A MONGODB ----------
-# 🔴 REEMPLAZA TU URI AQUI
-MONGO_URI = "mongodb+srv://balmorechavez123_db_user:tognDnbWokhtQmHY@CLUSTER.mongodb.net/?retryWrites=true&w=majority"
+# 🔴 REEMPLAZA CON TU URI REAL
+MONGO_URI = "mongodb+srv://balmorechavez123_db_user:tognDnbWokhtQmHY@iot-proyecto.61kstlx.mongodb.net/?appName=iot-proyecto"
+
+client = None
+collection = None
 
 try:
     client = MongoClient(
         MONGO_URI,
         tls=True,
+        tlsAllowInvalidCertificates=True,  # evita fallo SSL en Render
         serverSelectionTimeoutMS=5000
     )
 
-    # Intentar conexión
+    # Intentar conexión (esto valida la conexión)
     client.server_info()
+
     print("✅ Conectado a MongoDB correctamente")
 
+    # Base de datos y colección
+    db = client["iot_data"]
+    collection = db["sensores"]
+
 except Exception as e:
-    print("❌ Error de conexión con MongoDB:", e)
-
-
-# ----------- BASE DE DATOS ----------
-db = client["iot_data"]
-collection = db["sensores"]
-
+    print("⚠️ No se pudo conectar a MongoDB:", e)
+    print("⚠️ El servidor seguirá funcionando sin base de datos")
 
 # ----------- RUTA BASE ----------
 @app.route("/", methods=["GET"])
@@ -43,24 +47,20 @@ def recibir_datos():
     print("==============================")
     print(data)
 
-    try:
-        # ✅ GUARDAR EN MONGODB
-        collection.insert_one(data)
+    # ----------- GUARDAR EN MONGO (SI ESTA DISPONIBLE) ----------
+    if collection:
+        try:
+            collection.insert_one(data)
+            print("✅ Datos guardados en MongoDB")
 
-        print("✅ Datos guardados en MongoDB")
+        except Exception as e:
+            print("❌ Error al guardar en MongoDB:", str(e))
+    else:
+        print("⚠️ MongoDB no disponible, no se guardaron los datos")
 
-        return jsonify({
-            "status": "ok",
-            "mensaje": "Datos guardados correctamente"
-        }), 200
-
-    except Exception as e:
-        print("❌ Error al guardar:", str(e))
-
-        return jsonify({
-            "status": "error",
-            "mensaje": str(e)
-        }), 500
+    return jsonify({
+        "status": "ok"
+    }), 200
 
 
 # ----------- RUN LOCAL ----------
