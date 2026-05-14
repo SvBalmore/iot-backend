@@ -4,12 +4,28 @@ from pymongo import MongoClient
 app = Flask(__name__)
 
 # ----------- CONEXION A MONGODB ----------
-MONGO_URI = "mongodb+srv://balmorechavez123_db_user:tognDnbWokhtQmHY@iot-proyecto.61kstlx.mongodb.net/?appName=iot-proyecto"
+# 🔴 REEMPLAZA TU URI AQUI
+MONGO_URI = "mongodb+srv://balmorechavez123_db_user:tognDnbWokhtQmHY@CLUSTER.mongodb.net/?retryWrites=true&w=majority"
 
-client = MongoClient(MONGO_URI)
+try:
+    client = MongoClient(
+        MONGO_URI,
+        tls=True,
+        serverSelectionTimeoutMS=5000
+    )
 
-db = client["iot_data"]  # base de datos
-collection = db["sensores"]  # colección
+    # Intentar conexión
+    client.server_info()
+    print("✅ Conectado a MongoDB correctamente")
+
+except Exception as e:
+    print("❌ Error de conexión con MongoDB:", e)
+
+
+# ----------- BASE DE DATOS ----------
+db = client["iot_data"]
+collection = db["sensores"]
+
 
 # ----------- RUTA BASE ----------
 @app.route("/", methods=["GET"])
@@ -22,11 +38,13 @@ def home():
 def recibir_datos():
     data = request.get_json()
 
-    print("\n📥 NUEVO PAQUETE RECIBIDO")
+    print("\n==============================")
+    print("📥 NUEVO PAQUETE RECIBIDO")
+    print("==============================")
     print(data)
 
     try:
-        # 💾 GUARDAR EN MONGODB
+        # ✅ GUARDAR EN MONGODB
         collection.insert_one(data)
 
         print("✅ Datos guardados en MongoDB")
@@ -45,5 +63,6 @@ def recibir_datos():
         }), 500
 
 
+# ----------- RUN LOCAL ----------
 if __name__ == "__main__":
     app.run(debug=True)
